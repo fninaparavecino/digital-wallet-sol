@@ -12,6 +12,9 @@
 #include <sstream>
 #include <string>
 #include <sys/time.h>
+#include <limits.h>
+#include <cstdint>
+#include <time.h>
 using namespace std;
 
 struct node{
@@ -46,7 +49,7 @@ time_t convertStringToDateTime(string dateTime)
     
     // Now we read from buffer using get_time manipulator
     // and formatting the input appropriately
-    dateStream >> get_time(&dateTimeInput, dateTimeFormat.c_str());
+    dateStream >> std::get_time(&dateTimeInput, dateTimeFormat.c_str());
     
     // Convert the tm structure to time_t value and return
     return mktime(&dateTimeInput);
