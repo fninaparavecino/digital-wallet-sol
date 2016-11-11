@@ -25,6 +25,7 @@ struct node{
     vector<int> adj;
 };
 
+// Utility function to gather time of the system, it helps to measure job time per task
 double getWallTime(){
     struct timeval time;
     if(gettimeofday(&time,NULL)){
@@ -33,7 +34,7 @@ double getWallTime(){
     }
     return (double)time.tv_sec + (double)time.tv_usec * .000001;
 }
-
+// Utility function to convert string to time_t, it was not longer needed for optimized feature1, feature2, feature3
 time_t convertStringToDateTime(string dateTime)
 {
     // convert string to wsString
@@ -57,6 +58,8 @@ time_t convertStringToDateTime(string dateTime)
     // Convert the tm structure to time_t value and return
     return mktime(&dateTimeInput);
 }
+
+// Read File from source in parameter, and put the value on vectors
 void readFile(string filePath, vector<time_t> *dates, vector<int>* origin, vector<int>* dest)
 {
     ifstream fileInput( filePath );
@@ -128,6 +131,7 @@ void readFile(string filePath, vector<time_t> *dates, vector<int>* origin, vecto
 //        
 //    }
 //}
+
 bool checkExistedTransaction(time_t date, int origin, int dest,
                              vector<time_t> nodesBatchDates,
                              vector<int> nodesBatchOrigin,
@@ -183,33 +187,20 @@ vector<bool> processFeature1(vector<time_t> nodesBatchDates,
     return feature1;
 }
 
+//Optimized Feature1, it uses hashtable, it processes 4M is less than 3seconds.
 vector<bool> processFeature1Optimized(unordered_map<int, vector<int>> hashTableBatch,
                      vector<time_t> nodesStreamDates,
                      vector<int> nodesStreamOrigin,
                      vector<int> nodesStreamDest){
     vector<bool> feature1;
     int origin, dest;
-    time_t date;
-    
-//    // convert batch date to hashtable
-//    unordered_map<int, vector<int>> hashTableBatch;
-//    vector<int> adj;
-//    for (unsigned i=0; i<nodesBatchDates.size(); i++){
-//    	// add from origin to dest
-//		adj = hashTableBatch[nodesBatchOrigin.at(i)];
-//		adj.push_back(nodesBatchDest.at(i));
-//		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
-//    	    	
-//    	// add from dest to origin
-//		adj = hashTableBatch[nodesBatchDest.at(i)];
-//		adj.push_back(nodesBatchOrigin.at(i));
-//		hashTableBatch[nodesBatchDest.at(i)] = adj;		
-//    }
+    //time_t date;
+
     // process stream data
     for (unsigned i = 0; i < nodesStreamDates.size(); i++) {
         origin = nodesStreamOrigin.at(i);
         dest = nodesStreamDest.at(i);
-        date = nodesStreamDates.at(i);
+        //date = nodesStreamDates.at(i);
         
         //look for the pair in batch
         vector<int> previousTransactions = hashTableBatch[origin];
@@ -262,6 +253,7 @@ vector<bool> processFeature2(vector<time_t> nodesBatchDates,
     }
     return feature2;
 }
+// Optimized Feature2, it uses hashTable and highly process 4M of points in less than 30seconds in a low_end CPU chip
 vector<bool> processFeature2Optimized(unordered_map<int, vector<int>> hashTableBatch,
                              vector<time_t>nodesStreamDates,
                              vector<int>nodesStreamOrigin,
@@ -269,27 +261,12 @@ vector<bool> processFeature2Optimized(unordered_map<int, vector<int>> hashTableB
     
 	vector<bool> feature2;
 	int origin, dest;
-	time_t date;
-	
-//	// convert batch date to hashtable
-//	unordered_map<int, vector<int>> hashTableBatch;
-//	vector<int> adj;
-//	for (unsigned i=0; i<nodesBatchDates.size(); i++){
-//		// add from origin to dest
-//		adj = hashTableBatch[nodesBatchOrigin.at(i)];
-//		adj.push_back(nodesBatchDest.at(i));
-//		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
-//				
-//		// add from dest to origin
-//		adj = hashTableBatch[nodesBatchDest.at(i)];
-//		adj.push_back(nodesBatchOrigin.at(i));
-//		hashTableBatch[nodesBatchDest.at(i)] = adj;		
-//	}
+	//time_t date;
     
-    for (int i = 0; i < nodesStreamDates.size(); i++) {
+    for (int i = 0; i < nodesStreamOrigin.size(); i++) {
         origin = nodesStreamOrigin.at(i);
         dest = nodesStreamDest.at(i);
-        date = nodesStreamDates.at(i);
+        //date = nodesStreamDates.at(i);
         
         //look for the pair in batch
 		vector<int> previousTransactionsOrigin = hashTableBatch[origin];
@@ -336,6 +313,7 @@ void addEdge(int u, int v, vector<node> *graph){
     }
     
 }
+// Utility function to gather position in the graph
 int positionInGraph(int value, vector< node > graph){
     int position = -1;
     for (unsigned i =0; i < graph.size(); i++) {
@@ -358,6 +336,8 @@ int minDistance(vector<int> dist, vector<bool> sptSet, int nodesSize)
     return min_index;
 }
 
+// Dikjstra algorithm usin graph of vector<node>, node is struct
+// with value (key), and adj (another vector)
 int shorthestPath(vector<node> graph, int src, int dest)
 {
 	// If "src" or "dest" does not exist in the graph, then there is 
@@ -406,6 +386,8 @@ int shorthestPath(vector<node> graph, int src, int dest)
     return dist[destPosition];
 }
 
+// Function for an unoptimized Feature3, it uses vectors and create
+// a graph structure using node struct, it processes dijkstra algorithm
 vector<bool> processFeature3(vector<time_t> nodesBatchDates,
                              vector<int> nodesBatchOrigin,
                              vector<int>nodesBatchDest,
@@ -414,7 +396,8 @@ vector<bool> processFeature3(vector<time_t> nodesBatchDates,
                              vector<int>nodesStreamDest){
     
     vector<bool> feature3;
-    // create a graph
+    
+    // Create a graph
     vector< node > graph;
     
     for (unsigned i =0; i < nodesBatchDates.size(); i++) {
@@ -500,36 +483,14 @@ int shorthestPathOptimized( int src, int dest, unordered_map<int, vector<int>> g
     }
     return dist[dest];
 }
+// This function process the Feature3 using hashtable to optimize time execution
+// It does not use the date, message, or amount from stream
+// It uses dijkstra algorithm to find shortedst path, it is still very consuming
 vector<bool> processFeature3Optimized(unordered_map<int, vector<int>> hashTableBatch,
                              vector<time_t>nodesStreamDates,
                              vector<int>nodesStreamOrigin,
                              vector<int>nodesStreamDest){
     vector<bool> feature3;
-    
-//    // convert batch date to hashtable
-//	unordered_map<int, vector<int>> hashTableBatch;
-//	vector<int> adj;
-//	for (unsigned i=0; i<nodesBatchDates.size(); i++){
-//		// add from origin to dest
-//		adj = hashTableBatch[nodesBatchOrigin.at(i)];
-//		adj.push_back(nodesBatchDest.at(i));
-//		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
-//				
-//		// add from dest to origin
-//		adj = hashTableBatch[nodesBatchDest.at(i)];
-//		adj.push_back(nodesBatchOrigin.at(i));
-//		hashTableBatch[nodesBatchDest.at(i)] = adj;		
-//	}
-    
-    //verify hashTableStructure
-//    for (auto& x: hashTableBatch) {
-//        std::cout << x.first << ": " << endl;
-//        vector<int> adj = x.second;
-//        for (int i=0; i<adj.size(); i++) {
-//            cout << " " << adj.at(i) << " ";
-//        }
-//        cout << endl;
-//    }
     
     for (unsigned i=0; i < nodesStreamDates.size(); i++) {
         int origin, dest;
@@ -543,6 +504,8 @@ vector<bool> processFeature3Optimized(unordered_map<int, vector<int>> hashTableB
     }
     return feature3;
 }
+
+// Utility function to write the results into a file
 void writeFile(string pathFile, vector<bool> feature){
     ofstream ofs;
     ofs.open (pathFile, ofstream::out);
@@ -579,15 +542,6 @@ int main(int argC, char** argV){
             adj.push_back(nodesBatchOrigin.at(i));
             hashTableBatch[nodesBatchDest.at(i)] = adj;		
         }
-//        // print hash table
-//        for (auto& x: hashTableBatch) {
-//            std::cout << x.first << ": " << endl;
-//            vector<int> adj = x.second;
-//            for (int i=0; i<adj.size(); i++) {
-//                cout << " " << adj.at(i) << " ";
-//            }
-//            cout << endl;
-//        }
     }
     else{
         cerr << "Error... Argument for batch input file need to be provided as first argument"<< endl;
