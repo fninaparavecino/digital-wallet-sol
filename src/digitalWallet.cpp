@@ -88,6 +88,46 @@ void readFile(string filePath, vector<time_t> *dates, vector<int>* origin, vecto
     }
     
 }
+//void readFileToHashTable(string filePath, unordered_map<int, vector<int>> *hashTableBatch)
+//{
+//    ifstream fileInput( filePath );
+//    int numberElements=0;
+//    vector<int> adj;
+//    int origin, dest;
+//    for( string line; getline( fileInput, line ); )
+//    {
+//        istringstream lineStream( line );
+//        string field;
+//        
+//        // Get Line information
+//        if (!getline( lineStream, field, ',' ))
+//            break;
+//        if (field.compare("time")!=0) {
+//            // Get Origin Node
+//            if (!getline( lineStream, field, ',' ))
+//                break;
+//            origin = stoi(field);
+//            
+//            // Get Dest Node
+//            if (!getline( lineStream, field, ',' ))
+//                break;
+//            dest = stoi(field);
+//            
+//            // add from origin to dest
+//            adj = hashTableBatch[origin];
+//            adj.push_back(dest);
+//            hashTableBatch[origin] = adj;
+//            
+//            // add from dest to origin
+//            adj = hashTableBatch[dest];
+//            adj.push_back(origin);
+//            hashTableBatch[dest] = adj;
+//            
+//            numberElements++;
+//        }
+//        
+//    }
+//}
 bool checkExistedTransaction(time_t date, int origin, int dest,
                              vector<time_t> nodesBatchDates,
                              vector<int> nodesBatchOrigin,
@@ -143,9 +183,7 @@ vector<bool> processFeature1(vector<time_t> nodesBatchDates,
     return feature1;
 }
 
-vector<bool> processFeature1Optimized(vector<time_t> nodesBatchDates,
-                     vector<int> nodesBatchOrigin,
-                     vector<int> nodesBatchDest,
+vector<bool> processFeature1Optimized(unordered_map<int, vector<int>> hashTableBatch,
                      vector<time_t> nodesStreamDates,
                      vector<int> nodesStreamOrigin,
                      vector<int> nodesStreamDest){
@@ -153,20 +191,20 @@ vector<bool> processFeature1Optimized(vector<time_t> nodesBatchDates,
     int origin, dest;
     time_t date;
     
-    // convert batch date to hashtable
-    unordered_map<int, vector<int>> hashTableBatch;
-    vector<int> adj;
-    for (unsigned i=0; i<nodesBatchDates.size(); i++){
-    	// add from origin to dest
-		adj = hashTableBatch[nodesBatchOrigin.at(i)];
-		adj.push_back(nodesBatchDest.at(i));
-		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
-    	    	
-    	// add from dest to origin
-		adj = hashTableBatch[nodesBatchDest.at(i)];
-		adj.push_back(nodesBatchOrigin.at(i));
-		hashTableBatch[nodesBatchDest.at(i)] = adj;		
-    }
+//    // convert batch date to hashtable
+//    unordered_map<int, vector<int>> hashTableBatch;
+//    vector<int> adj;
+//    for (unsigned i=0; i<nodesBatchDates.size(); i++){
+//    	// add from origin to dest
+//		adj = hashTableBatch[nodesBatchOrigin.at(i)];
+//		adj.push_back(nodesBatchDest.at(i));
+//		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
+//    	    	
+//    	// add from dest to origin
+//		adj = hashTableBatch[nodesBatchDest.at(i)];
+//		adj.push_back(nodesBatchOrigin.at(i));
+//		hashTableBatch[nodesBatchDest.at(i)] = adj;		
+//    }
     // process stream data
     for (unsigned i = 0; i < nodesStreamDates.size(); i++) {
         origin = nodesStreamOrigin.at(i);
@@ -224,9 +262,7 @@ vector<bool> processFeature2(vector<time_t> nodesBatchDates,
     }
     return feature2;
 }
-vector<bool> processFeature2Optimized(vector<time_t> nodesBatchDates,
-                             vector<int> nodesBatchOrigin,
-                             vector<int>nodesBatchDest,
+vector<bool> processFeature2Optimized(unordered_map<int, vector<int>> hashTableBatch,
                              vector<time_t>nodesStreamDates,
                              vector<int>nodesStreamOrigin,
                              vector<int>nodesStreamDest){
@@ -235,21 +271,21 @@ vector<bool> processFeature2Optimized(vector<time_t> nodesBatchDates,
 	int origin, dest;
 	time_t date;
 	
-	// convert batch date to hashtable
-	unordered_map<int, vector<int>> hashTableBatch;
-	vector<int> adj;
-	for (unsigned i=0; i<nodesBatchDates.size(); i++){
-		// add from origin to dest
-		adj = hashTableBatch[nodesBatchOrigin.at(i)];
-		adj.push_back(nodesBatchDest.at(i));
-		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
-				
-		// add from dest to origin
-		adj = hashTableBatch[nodesBatchDest.at(i)];
-		adj.push_back(nodesBatchOrigin.at(i));
-		hashTableBatch[nodesBatchDest.at(i)] = adj;		
-	}
-	    
+//	// convert batch date to hashtable
+//	unordered_map<int, vector<int>> hashTableBatch;
+//	vector<int> adj;
+//	for (unsigned i=0; i<nodesBatchDates.size(); i++){
+//		// add from origin to dest
+//		adj = hashTableBatch[nodesBatchOrigin.at(i)];
+//		adj.push_back(nodesBatchDest.at(i));
+//		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
+//				
+//		// add from dest to origin
+//		adj = hashTableBatch[nodesBatchDest.at(i)];
+//		adj.push_back(nodesBatchOrigin.at(i));
+//		hashTableBatch[nodesBatchDest.at(i)] = adj;		
+//	}
+    
     for (int i = 0; i < nodesStreamDates.size(); i++) {
         origin = nodesStreamOrigin.at(i);
         dest = nodesStreamDest.at(i);
@@ -258,13 +294,16 @@ vector<bool> processFeature2Optimized(vector<time_t> nodesBatchDates,
         //look for the pair in batch
 		vector<int> previousTransactionsOrigin = hashTableBatch[origin];
 		vector<int> previousTransactionsDest = hashTableBatch[dest];
+        
 		vector<int>::iterator it;
 		it = find( previousTransactionsOrigin.begin(), previousTransactionsOrigin.end(), dest);
-		if (it != previousTransactionsDest.end())
+        if (it != previousTransactionsOrigin.end()){
 			feature2.push_back(true);
+        }
 		else
 		{
 			bool friendOfFriend = false;
+            
 			for (int i=0; i < previousTransactionsOrigin.size(); i++){
 				it = find( previousTransactionsDest.begin(), previousTransactionsDest.end(), previousTransactionsOrigin.at(i));
 				
@@ -395,24 +434,31 @@ vector<bool> processFeature3(vector<time_t> nodesBatchDates,
     }
     return feature3;
 }
-int minDistance(vector<int> dist, vector<bool> sptSet, int nodesSize)
+
+int minDistanceOptimized(unordered_map<int, int> dist, unordered_map<int, bool> sptSet)
 {
     // Initialize min value
-    int min = INT_MAX, min_index;
-    
-    for (int v = 0; v < nodesSize; v++)
-        if (sptSet[v] == false && dist[v] <= min)
-            min = dist[v], min_index = v;
-    
+    int min = INT_MAX;
+    int min_index = -1;
+    for ( auto it = dist.begin(); it != dist.end(); ++it ){
+        if (sptSet[it->first] == false && dist[it->first] <= min)
+            min = dist[it->first], min_index = it->first;
+    }
     return min_index;
 }
 
-int shorthestPath( int src, int dest, unordered_map<int, vector<int>> graph)
+int shorthestPathOptimized( int src, int dest, unordered_map<int, vector<int>> graph)
 {
 	// If "src" or "dest" does not exist in the graph, then there is 
-	// no path from it, or to it	
-	if (graph[src] == NULL || graph[dest] == NULL)
-		return INT_MAX;
+	// no path from it, or to it
+    unordered_map<int, vector<int>>::const_iterator isThere = graph.find(src);
+    if (isThere == graph.end()) {
+        return INT_MAX;
+    }
+    isThere = graph.find(dest);
+    if (isThere == graph.end()) {
+        return INT_MAX;
+    }
 	
 	// The output value.  dist will hold the shortest
 	// distance from src to all nodes
@@ -432,55 +478,64 @@ int shorthestPath( int src, int dest, unordered_map<int, vector<int>> graph)
     dist[src] = 0;
     
     // Find shortest path for all vertices
-//    for (int count = 0; count < graph.size()-1; count++)
-//    {
-//        // Pick the minimum distance vertex from the set of vertices not
-//        // yet processed. u is always equal to src in first iteration.
-//        int u = minDistance(dist, sptSet, graph.size());
-//        
-//        // Mark the picked vertex as processed
-//        sptSet[u] = true;
-//        
-//        // Update dist value of the adjacent vertices of the picked vertex.
-//        for (int v = 0; v < graph.at(u).adj.size(); v++)
-//            
-//            // Update dist[v] only if is not in sptSet, there is an edge from
-//            // u to v, and total weight of path from src to  v through u is
-//            // smaller than current value of dist[v]
-//            if (!sptSet[v] && graph.at(u).adj.at(v) && dist[u] != INT_MAX
-//                && dist[u] + 1 < dist[v])
-//                dist[v] = dist[u] + 1;
-//    }    
+    for (auto& node: graph)
+    {
+        
+        // Pick the minimum distance vertex from the set of vertices not
+        // yet processed. u is always equal to src in first iteration.
+        int u = minDistanceOptimized(dist, sptSet);
+        // Mark the picked vertex as processed
+        sptSet[u] = true;
+        
+        // Update dist value of the adjacent vertices of the picked vertex.
+        vector<int> adj = graph[u];
+        for (int v = 0; v < adj.size(); v++)
+            
+            // Update dist[v] only if is not in sptSet, there is an edge from
+            // u to v, and total weight of path from src to  v through u is
+            // smaller than current value of dist[v]
+            if (!sptSet[adj.at(v)] && adj.at(v) && dist[u] != INT_MAX
+                && dist[u] + 1 < dist[adj.at(v)])
+                dist[adj.at(v)] = dist[u] + 1;
+    }
     return dist[dest];
 }
-vector<bool> processFeature3Optimized(vector<time_t> nodesBatchDates,
-                             vector<int> nodesBatchOrigin,
-                             vector<int>nodesBatchDest,
+vector<bool> processFeature3Optimized(unordered_map<int, vector<int>> hashTableBatch,
                              vector<time_t>nodesStreamDates,
                              vector<int>nodesStreamOrigin,
                              vector<int>nodesStreamDest){
     vector<bool> feature3;
     
-    // convert batch date to hashtable
-	unordered_map<int, vector<int>> hashTableBatch;
-	vector<int> adj;
-	for (unsigned i=0; i<nodesBatchDates.size(); i++){
-		// add from origin to dest
-		adj = hashTableBatch[nodesBatchOrigin.at(i)];
-		adj.push_back(nodesBatchDest.at(i));
-		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
-				
-		// add from dest to origin
-		adj = hashTableBatch[nodesBatchDest.at(i)];
-		adj.push_back(nodesBatchOrigin.at(i));
-		hashTableBatch[nodesBatchDest.at(i)] = adj;		
-	}
-        
-    for (unsigned i=0; i <nodesStreamDates.size(); i++) {
+//    // convert batch date to hashtable
+//	unordered_map<int, vector<int>> hashTableBatch;
+//	vector<int> adj;
+//	for (unsigned i=0; i<nodesBatchDates.size(); i++){
+//		// add from origin to dest
+//		adj = hashTableBatch[nodesBatchOrigin.at(i)];
+//		adj.push_back(nodesBatchDest.at(i));
+//		hashTableBatch[nodesBatchOrigin.at(i)] = adj;
+//				
+//		// add from dest to origin
+//		adj = hashTableBatch[nodesBatchDest.at(i)];
+//		adj.push_back(nodesBatchOrigin.at(i));
+//		hashTableBatch[nodesBatchDest.at(i)] = adj;		
+//	}
+    
+    //verify hashTableStructure
+//    for (auto& x: hashTableBatch) {
+//        std::cout << x.first << ": " << endl;
+//        vector<int> adj = x.second;
+//        for (int i=0; i<adj.size(); i++) {
+//            cout << " " << adj.at(i) << " ";
+//        }
+//        cout << endl;
+//    }
+    
+    for (unsigned i=0; i < nodesStreamDates.size(); i++) {
         int origin, dest;
         origin = nodesStreamOrigin.at(i);
         dest = nodesStreamDest.at(i);
-        if (shorthestPath(origin, dest, hashTableBatch) <= 4) {
+        if (shorthestPathOptimized(origin, dest, hashTableBatch) <= 4) {
             feature3.push_back(true);
         }
         else
@@ -505,17 +560,40 @@ void writeFile(string pathFile, vector<bool> feature){
 int main(int argC, char** argV){
     
 	//read file of input of batch
+    unordered_map<int, vector<int>> hashTableBatch;
     vector<time_t> nodesBatchDates;
 	vector<int> nodesBatchOrigin;
 	vector<int> nodesBatchDest;
+    
     if (argV[1]){
         readFile(argV[1], &nodesBatchDates, &nodesBatchOrigin, &nodesBatchDest);
+        vector<int> adj;
+        for (unsigned i=0; i<nodesBatchDates.size(); i++){
+            // add from origin to dest
+            adj = hashTableBatch[nodesBatchOrigin.at(i)];
+            adj.push_back(nodesBatchDest.at(i));
+            hashTableBatch[nodesBatchOrigin.at(i)] = adj;
+    
+            // add from dest to origin
+            adj = hashTableBatch[nodesBatchDest.at(i)];
+            adj.push_back(nodesBatchOrigin.at(i));
+            hashTableBatch[nodesBatchDest.at(i)] = adj;		
+        }
+//        // print hash table
+//        for (auto& x: hashTableBatch) {
+//            std::cout << x.first << ": " << endl;
+//            vector<int> adj = x.second;
+//            for (int i=0; i<adj.size(); i++) {
+//                cout << " " << adj.at(i) << " ";
+//            }
+//            cout << endl;
+//        }
     }
     else{
         cerr << "Error... Argument for batch input file need to be provided as first argument"<< endl;
     }
     
-    cout << "Batch elements: "<< nodesBatchDates.size() << endl;
+    cout << "Batch elements: "<< hashTableBatch.size() << endl;
 
     //read files of input stream
     vector<time_t> nodesStreamDates;
@@ -558,50 +636,38 @@ int main(int argC, char** argV){
     
     double wallS0, wallS1;
     
-    //************** FEATURE 1 **************
-//    {
-//        wallS0 = getWallTime();
-//        // process feature1, there was a previous transaction: trusted= true, unverified = false
-//        vector<bool> feature1 = processFeature1(nodesBatchDates, nodesBatchOrigin, nodesBatchDest,
-//                                                nodesStreamDates, nodesStreamOrigin, nodesStreamDest);
-//        //write output files
-//        writeFile(pathFeature1, feature1);
-//        wallS1 = getWallTime();
-//        cout << "Feature1 processed  "<< feature1.size() << " elements, and its job Time: " << (wallS1-wallS0)*1000 <<" ms." << endl;
-//    }
-    
     //************** FEATURE 1 OPTIMIZED**************
     {
         wallS0 = getWallTime();
         // process feature1, there was a previous transaction: trusted= true, unverified = false
-        vector<bool> feature1Opt = processFeature1Optimized(nodesBatchDates, nodesBatchOrigin, nodesBatchDest,
+        vector<bool> feature1Opt = processFeature1Optimized(hashTableBatch,
                                                 nodesStreamDates, nodesStreamOrigin, nodesStreamDest);
-        //write output files
-        writeFile(pathFeature1, feature1Opt);
         wallS1 = getWallTime();
         cout << "Feature1 processed  "<< feature1Opt.size() << " elements, and its job Time: " << (wallS1-wallS0)*1000 <<" ms." << endl;
+        //write output files
+        writeFile(pathFeature1, feature1Opt);
     }
-    //************** FEATURE 2 **************
+    //************** FEATURE 2 OPTIMIZED**************
     {
         wallS0 = getWallTime();
         // process feature2, there is an intersection between the friends of origin node and friends of dest node
-        vector<bool> feature2 = processFeature2Optimized(nodesBatchDates, nodesBatchOrigin, nodesBatchDest,
+        vector<bool> feature2Opt = processFeature2Optimized(hashTableBatch,
                                                 nodesStreamDates, nodesStreamOrigin, nodesStreamDest);
-        //write output files
-        writeFile(pathFeature2, feature2);
         wallS1 = getWallTime();
-        cout << "Feature2 processed  "<< feature2.size() << " elements, and its job Time: " << (wallS1-wallS0)*1000 <<" ms." << endl;
+        cout << "Feature2 processed  "<< feature2Opt.size() << " elements, and its job Time: " << (wallS1-wallS0)*1000 <<" ms." << endl;
+        //write output files
+        writeFile(pathFeature2, feature2Opt);
     }
-    //************** FEATURE 3 **************
+    //************** FEATURE 3 OPTIMIZED**************
     {
         wallS0 = getWallTime();
-        // process feature2, shortest path between origin/dest should be less equal to 4
-        vector<bool> feature3 = processFeature3(nodesBatchDates, nodesBatchOrigin, nodesBatchDest,
+        // process feature3, shortest path between origin/dest should be less equal to 4
+        vector<bool> feature3Opt = processFeature3Optimized(hashTableBatch,
                                                 nodesStreamDates, nodesStreamOrigin, nodesStreamDest);
-        //write output files
-        writeFile(pathFeature3, feature3);
         wallS1 = getWallTime();
-        cout << "Feature3 processed  "<< feature3.size() << " elements, and its job Time: " << (wallS1-wallS0)*1000 <<" ms." << endl;
+        cout << "Feature3 processed  "<< feature3Opt.size() << " elements, and its job Time: " << (wallS1-wallS0)*1000 <<" ms." << endl;
+        //write output files
+        writeFile(pathFeature3, feature3Opt);
     }
 		
 }
